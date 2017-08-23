@@ -17,27 +17,22 @@
  */
 package org.apache.avro;
 
-import org.apache.avro.Schema;
-import org.apache.avro.Schema.Field;
 import org.apache.avro.ipc.Server;
 import org.apache.avro.ipc.Transceiver;
 import org.apache.avro.ipc.Responder;
 import org.apache.avro.ipc.HttpServer;
 import org.apache.avro.ipc.HttpTransceiver;
-import org.apache.avro.ipc.generic.GenericRequestor;
-import org.apache.avro.ipc.specific.SpecificRequestor;
-import org.apache.avro.generic.GenericData;
-import org.apache.avro.test.Simple;
 
-import org.junit.Test;
 
-import org.mortbay.jetty.security.SslSocketConnector;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import java.net.URL;
-import java.net.ServerSocket;
-import java.net.SocketTimeoutException;
-import java.lang.reflect.UndeclaredThrowableException;
-import java.util.ArrayList;
 
 public class TestProtocolHttps extends TestProtocolSpecific {
 
@@ -48,14 +43,30 @@ public class TestProtocolHttps extends TestProtocolSpecific {
     System.setProperty("javax.net.ssl.password", "avrotest");
     System.setProperty("javax.net.ssl.trustStore", "src/test/truststore");
     System.setProperty("javax.net.ssl.trustStorePassword", "avrotest");
-    SslSocketConnector connector = new SslSocketConnector();
-    connector.setPort(18443);
-    connector.setKeystore(System.getProperty("javax.net.ssl.keyStore"));
-    connector.setPassword(System.getProperty("javax.net.ssl.password"));
-    connector.setKeyPassword(System.getProperty("javax.net.ssl.keyStorePassword"));
-    connector.setHost("localhost");
-    connector.setNeedClientAuth(false);
-    return new HttpServer(testResponder, connector);
+
+    org.eclipse.jetty.server.Server srv = new org.eclipse.jetty.server.Server();
+
+    SslContextFactory sslContextFactory = new SslContextFactory();
+    sslContextFactory.setKeyStorePath(System.getProperty("javax.net.ssl.keyStore"));
+    sslContextFactory.setKeyStorePassword(System.getProperty("javax.net.ssl.keyStorePassword"));
+    sslContextFactory.setKeyManagerPassword( System.getProperty("javax.net.ssl.password"));
+    sslContextFactory.setTrustStorePath(System.getProperty("javax.net.ssl.trustStore"));
+    sslContextFactory.setTrustStorePassword(System.getProperty("javax.net.ssl.trustStorePassword"));
+
+    HttpConfiguration http_config = new HttpConfiguration();
+    http_config.setSecureScheme("https");
+    http_config.setSecurePort(18443);
+
+    HttpConfiguration https_config = new HttpConfiguration(http_config);
+    https_config.addCustomizer(new SecureRequestCustomizer());
+
+    ServerConnector sslConnector = new ServerConnector(srv,
+      new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
+      new HttpConnectionFactory(https_config));
+    sslConnector.setPort(18443);
+    sslConnector.setHost("localhost");
+
+    return new HttpServer(testResponder, sslConnector);
   }
 
   @Override

@@ -41,8 +41,8 @@ import org.apache.avro.ipc.Responder;
 import org.apache.avro.ipc.Transceiver;
 import org.apache.avro.ipc.generic.GenericRequestor;
 import org.apache.avro.ipc.generic.GenericResponder;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.Test;
-import org.mortbay.log.Log;
 
 public class TestStatsPluginAndServlet {
   Protocol protocol = Protocol.parse("" + "{\"protocol\": \"Minimal\", "
@@ -187,7 +187,7 @@ public class TestStatsPluginAndServlet {
         + "   \"request\": [{\"name\": \"millis\", \"type\": \"long\"}," +
           "{\"name\": \"data\", \"type\": \"bytes\"}], "
         + "   \"response\": \"null\"} } }");
-    Log.info("Using protocol: " + protocol.toString());
+    Log.getLog().info("Using protocol: " + protocol.toString());
     Responder r = new SleepyResponder(protocol);
     StatsPlugin p = new StatsPlugin();
     r.addRPCPlugin(p);
